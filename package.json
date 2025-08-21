@@ -4,14 +4,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js",
-    "seed": "node seedDatabase.js",
-    "seed:fresh": "node seedDatabase.js",
-    "build": "cd ../marketplace-cr && npm run build",
-    "build:install": "cd ../marketplace-cr && npm install && npm run build",
-    "start:full": "npm run build && npm start",
-    "dev:full": "npm run build && npm run dev",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon app.js"
   },
   "keywords": [],
   "author": "",
