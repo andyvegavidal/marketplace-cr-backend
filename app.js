@@ -33,13 +33,23 @@ connectDB();
 // Definir ruta del frontend (comentado temporalmente)
 // const frontendPath = path.join(__dirname, '../marketplace-cr/dist');
 
+// ✅ Allow only your frontend domain
+const allowedOrigins = [
+  'https://marketplacefrontend-production.up.railway.app'
+];
+
 // Basic middleware
 app.use(cookieParser());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'http://localhost:5050'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'auth-token']
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed for this origin: ' + origin));
+    }
+  },
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Origin','X-Requested-With','Content-Type','Accept','Authorization']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
