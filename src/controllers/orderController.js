@@ -1,13 +1,4 @@
-/**
- * CONTROLADOR DE ÓRDENES
- * 
- * Maneja todas las operaciones relacionadas con órdenes de compra,
- * incluyendo creación, gestión y consultas para reportes.
- * 
- * @controller OrderController
- * @author Marketplace CR Development Team
- * @version 1.0.0
- */
+
 
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -18,7 +9,7 @@ const User = require('../models/User');
 const Purchase = require('../models/Purchase');
 const Sale = require('../models/Sale');
 
-// Función helper para verificar token y obtener usuario
+// Verificar token y obtener usuario
 const verifyToken = async (req) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -38,13 +29,9 @@ const verifyToken = async (req) => {
   }
 };
 
-/**
- * Crear una nueva orden
- * POST /api/orders
- */
+// Crear una nueva orden
 const createOrder = async (req, res) => {
   try {
-    // Verificar autenticación PRIMERO
     const user = await verifyToken(req);
     
     const {
@@ -56,7 +43,6 @@ const createOrder = async (req, res) => {
       tax = 0
     } = req.body;
 
-    // Validar que se proporcionen items
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -64,7 +50,6 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Validar que todos los productos existan y estén activos
     for (const item of items) {
       const product = await Product.findById(item.product);
       if (!product || !product.isActive) {
@@ -73,8 +58,6 @@ const createOrder = async (req, res) => {
           message: `Producto ${item.product} no disponible`
         });
       }
-      
-      // Validar stock disponible
       if (product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
@@ -83,7 +66,6 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Crear la orden
     const order = new Order({
       buyer: user._id,
       items: items.map(item => ({
@@ -100,9 +82,7 @@ const createOrder = async (req, res) => {
 
     await order.save();
 
-    // Actualizar stock de productos y crear registros de compras/ventas
     for (const item of items) {
-      // Actualizar stock del producto
       await Product.findByIdAndUpdate(
         item.product,
         { 
@@ -144,6 +124,7 @@ const createOrder = async (req, res) => {
         unitPrice: item.price,
         totalAmount: item.total,
         platformCommissionRate: 0.05, // 5% de comisión
+        netAmount: item.total * (1 - 0.05),
         paymentMethod: paymentMethod,
         paymentStatus: 'completed',
         status: 'completed'
@@ -168,7 +149,6 @@ const createOrder = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al crear orden:', error);
     
     // Si es error de autenticación, retornar 401
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
@@ -186,10 +166,7 @@ const createOrder = async (req, res) => {
   }
 };
 
-/**
- * Obtener órdenes del usuario
- * GET /api/orders/my-orders
- */
+// Obtener órdenes del usuario
 const getMyOrders = async (req, res) => {
   try {
     // Verificar autenticación
@@ -230,7 +207,6 @@ const getMyOrders = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener mis órdenes:', error);
     
     // Si es error de autenticación, retornar 401
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
@@ -248,17 +224,12 @@ const getMyOrders = async (req, res) => {
   }
 };
 
-/**
- * Obtener órdenes de una tienda
- * GET /api/orders/store/:storeId
- */
+// Obtener órdenes de una tienda
 const getStoreOrders = async (req, res) => {
   try {
     const { storeId } = req.params;
-    console.log('🔍 Buscando órdenes para tienda:', storeId);
     
     const { page = 1, limit = 10, status, startDate, endDate } = req.query;
-    console.log('📄 Parámetros de consulta:', { page, limit, status, startDate, endDate });
 
     // Validar ObjectId del storeId
     let storeObjectId;
@@ -296,8 +267,6 @@ const getStoreOrders = async (req, res) => {
       }
     }
     
-    console.log('🔍 Filtros aplicados:', JSON.stringify(matchFilters, null, 2));
-
     // Pipeline de agregación mejorado
     const aggregationPipeline = [
       // Paso 1: Filtrar órdenes que contengan items de la tienda
@@ -449,7 +418,6 @@ const getStoreOrders = async (req, res) => {
       { $limit: parseInt(limit) }
     ];
 
-    console.log('🔄 Ejecutando agregación...');
     const orders = await Order.aggregate(paginatedPipeline);
 
     // Contar total de documentos para paginación
@@ -476,8 +444,6 @@ const getStoreOrders = async (req, res) => {
     const countResult = await Order.aggregate(countPipeline);
     const total = countResult[0]?.total || 0;
 
-    console.log(`✅ Encontradas ${orders.length} órdenes de un total de ${total} para la tienda ${storeId}`);
-
     // Calcular estadísticas adicionales
     const stats = {
       totalOrders: total,
@@ -500,7 +466,6 @@ const getStoreOrders = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error al obtener órdenes de tienda:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -509,10 +474,7 @@ const getStoreOrders = async (req, res) => {
   }
 };
 
-/**
- * Obtener detalles de una orden
- * GET /api/orders/:id
- */
+// Obtener detalles de una orden
 const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
@@ -535,7 +497,6 @@ const getOrderById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener orden:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -544,10 +505,7 @@ const getOrderById = async (req, res) => {
   }
 };
 
-/**
- * Actualizar estado de una orden
- * PUT /api/orders/:id/status
- */
+// Actualizar estado de una orden
 const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -587,7 +545,6 @@ const updateOrderStatus = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al actualizar estado de orden:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -596,10 +553,7 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-/**
- * Crear datos de ejemplo para testing
- * POST /api/orders/seed
- */
+// Crear datos de ejemplo para testing
 const seedOrders = async (req, res) => {
   try {
     // Obtener algunos productos y tiendas para crear órdenes de ejemplo
@@ -674,7 +628,6 @@ const seedOrders = async (req, res) => {
         await new Promise(resolve => setTimeout(resolve, 10));
         
       } catch (orderError) {
-        console.error(`Error creando orden ${i}:`, orderError.message);
         continue; // Continuar con la siguiente orden
       }
     }
@@ -689,7 +642,6 @@ const seedOrders = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al crear órdenes de ejemplo:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',

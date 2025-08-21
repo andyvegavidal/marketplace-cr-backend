@@ -1,19 +1,11 @@
-/**
- * CONTROLADOR DE VENTAS
- * 
- * Maneja todas las operaciones relacionadas con las ventas realizadas por las tiendas.
- * 
- * @controller SaleController
- * @author Marketplace CR Development Team
- * @version 1.0.0
- */
+
 
 const jwt = require('jsonwebtoken');
 const Sale = require('../models/Sale');
 const Store = require('../models/Store');
 const User = require('../models/User');
 
-// Función helper para verificar token y obtener usuario
+// Verificar token y obtener usuario
 const verifyToken = async (req) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -33,10 +25,7 @@ const verifyToken = async (req) => {
   }
 };
 
-/**
- * Obtener todas las ventas de las tiendas del usuario
- * GET /api/sales/my-sales
- */
+// Obtener todas las ventas de las tiendas del usuario
 const getMySales = async (req, res) => {
   try {
     const user = await verifyToken(req);
@@ -82,7 +71,6 @@ const getMySales = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener ventas:', error);
     
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
       return res.status(401).json({
@@ -99,10 +87,7 @@ const getMySales = async (req, res) => {
   }
 };
 
-/**
- * Obtener detalles de una venta específica
- * GET /api/sales/:id
- */
+// Obtener detalles de una venta específica
 const getSaleDetails = async (req, res) => {
   try {
     const user = await verifyToken(req);
@@ -131,7 +116,6 @@ const getSaleDetails = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener detalles de venta:', error);
     
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
       return res.status(401).json({
@@ -148,10 +132,7 @@ const getSaleDetails = async (req, res) => {
   }
 };
 
-/**
- * Obtener estadísticas de ventas del usuario
- * GET /api/sales/stats
- */
+// Obtener estadísticas de ventas del usuario
 const getSalesStats = async (req, res) => {
   try {
     const user = await verifyToken(req);
@@ -246,7 +227,6 @@ const getSalesStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener estadísticas de ventas:', error);
     
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
       return res.status(401).json({

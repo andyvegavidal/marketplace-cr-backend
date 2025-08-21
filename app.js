@@ -49,7 +49,6 @@ app.use(express.static('public'));
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`📝 ${req.method} ${req.path} - ${new Date().toISOString()}`);
   next();
 });
 
@@ -81,7 +80,6 @@ app.use('/api/debug', debugRoutes);
 app.get('/api/health', (req, res) => {
   // Si tiene query param para analytics, devolver datos de analytics
   if (req.query.analytics === 'true') {
-    console.log('🔧 DEVOLVIENDO DATOS DE ANALYTICS DESDE /api/health');
     return res.json({
       success: true,
       data: {
@@ -148,7 +146,6 @@ app.get('/api/health', (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
   res.status(500).json({ 
     error: err.message || 'Internal Server Error'
   });
@@ -170,8 +167,7 @@ const PORT = process.env.PORT || 5050;
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
+    // Server started successfully
   });
 }
 

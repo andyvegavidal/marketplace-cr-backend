@@ -1,50 +1,10 @@
-/**
- * CONTROLADOR DE PRODUCTOS - API REST AVANZADA
- * 
- * Implementa la lógica de negocio para la gestión integral de productos
- * en el marketplace, con arquitectura escalable y optimizaciones de rendimiento
- * específicas para operaciones de e-commerce de alto volumen.
- * 
- * Características técnicas implementadas:
- * - API RESTful completa con métodos CRUD optimizados
- * - Sistema de filtrado y búsqueda con indexación MongoDB
- * - Paginación eficiente para datasets grandes
- * - Validación de datos robusta con sanitización
- * - Manejo de errores centralizado con logging
- * - Optimizaciones de consultas con aggregation pipelines
- * - Caché de consultas frecuentes para mejor rendimiento
- * 
- * Integración con MongoDB Atlas:
- * - Uso de índices compuestos para búsquedas optimizadas
- * - Aggregation framework para estadísticas complejas
- * - Transacciones ACID para operaciones críticas
- * 
- * @controller ProductController
- * @author Marketplace CR Development Team
- * @version 3.1.0 - Optimización empresarial
- */
-
 const Product = require('../models/Product');
 const Store = require('../models/Store');
 const mongoose = require('mongoose');
 
-/**
- * Obtiene lista paginada de productos con sistema de filtros avanzado.
- * 
- * Endpoint principal para la consulta de productos con capacidades de:
- * - Filtrado por categoría, precio, tienda y texto libre
- * - Ordenamiento por múltiples criterios
- * - Paginación eficiente para UX optimizada
- * - Búsqueda textual con índices MongoDB
- * 
- * @route GET /api/products
- * @param {Object} req - Request con query parameters de filtrado
- * @param {Object} res - Response con productos paginados y metadatos
- * @returns {Object} JSON con productos, paginación y estadísticas
- */
+// Obtener lista paginada de productos con filtros
 const getProducts = async (req, res) => {
   try {
-    // Extracción y normalización de parámetros de consulta
     const {
       page = 1,
       limit = 100,
@@ -58,15 +18,12 @@ const getProducts = async (req, res) => {
       featured
     } = req.query;
 
-    // Construcción del filtro de consulta con validación
     const filter = { isActive: true };
     
-    // Filtro por categoría con búsqueda insensible a mayúsculas
     if (category) {
       filter.category = new RegExp(category, 'i');
     }
     
-    // Filtro por rango de precios con validación numérica
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
@@ -81,16 +38,13 @@ const getProducts = async (req, res) => {
       filter.featured = featured === 'true';
     }
 
-    // Búsqueda por texto
     if (search) {
       filter.$text = { $search: search };
     }
 
-    // Opciones de paginación
     const skip = (page - 1) * limit;
     const sortOptions = { [sortBy]: parseInt(sortOrder) };
 
-    // Ejecutar consulta
     const products = await Product.find(filter)
       .populate('storeId', 'userId description rating verified')
       .populate({
@@ -104,31 +58,7 @@ const getProducts = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Contar total
     const total = await Product.countDocuments(filter);
-
-    // Incrementar vistas si no es el propietario (solo para usuarios autenticados)
-    if (req.user && products.length > 0) {
-      const productIds = products
-        .filter(product => {
-          // Verificar que el producto tenga storeId y userId
-          if (!product.storeId || !product.storeId.userId) {
-            return false;
-          }
-          
-          // Solo incrementar vistas si no es el propietario
-          return !(req.user.userType === 'store' && 
-                  product.storeId.userId._id.equals(req.user._id));
-        })
-        .map(product => product._id);
-      
-      if (productIds.length > 0) {
-        await Product.updateMany(
-          { _id: { $in: productIds } },
-          { $inc: { views: 1 } }
-        );
-      }
-    }
 
     res.json({
       success: true,
@@ -171,18 +101,11 @@ const getProductById = async (req, res) => {
       });
     }
 
-    // Incrementar vistas si no es el propietario
-    if (!req.user || 
-        req.user.userType !== 'store' || 
-        !product.storeId.userId._id.equals(req.user._id)) {
-      await product.incrementViews();
-    }
+    await product.incrementViews();
 
     res.json({
       success: true,
-      data: {
-        product
-      }
+      data: { product }
     });
 
   } catch (error) {
@@ -196,7 +119,7 @@ const getProductById = async (req, res) => {
 // Crear producto (solo tiendas)
 const createProduct = async (req, res) => {
   try {
-    // Verificar JWT directamente
+    // Verificar JWT
     const token = req.headers.authorization?.split(' ')[1];
     
     if (!token) {
@@ -231,7 +154,7 @@ const createProduct = async (req, res) => {
       tags = []
     } = req.body;
 
-    // Obtener store del usuario autenticado
+    // Obtener tienda del usuario
     const store = await Store.findOne({ userId: userId });
     
     if (!store) {
@@ -241,18 +164,16 @@ const createProduct = async (req, res) => {
       });
     }
 
-    // Manejar imágenes subidas
+    // Manejar imágenes
     let images = [];
     if (req.files && req.files.length > 0) {
       images = req.files.map(file => `/uploads/${file.filename}`);
     }
 
-    // Para pruebas - imagen por defecto si no se sube ninguna
     if (images.length === 0) {
-      images = ['/uploads/default-product.jpg']; // Imagen por defecto para pruebas
+      images = ['/uploads/default-product.jpg'];
     }
 
-    // Crear producto
     const product = new Product({
       storeId: store._id,
       name,
@@ -278,9 +199,7 @@ const createProduct = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Producto creado exitosamente',
-      data: {
-        product
-      }
+      data: { product }
     });
 
   } catch (error) {
@@ -294,10 +213,32 @@ const createProduct = async (req, res) => {
 // Actualizar producto
 const updateProduct = async (req, res) => {
   try {
+    // Verificar JWT
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token de autorización requerido'
+      });
+    }
+
+    let userId;
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token inválido'
+      });
+    }
+
     const productId = req.params.id;
     const updateData = req.body;
 
-    // Verificar que el producto pertenece a la tienda del usuario
+    // Verificar que el producto existe
     const product = await Product.findById(productId).populate('storeId');
     
     if (!product) {
@@ -307,42 +248,48 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    if (!product.storeId.userId.equals(req.user._id)) {
+    // Verificar permisos
+    if (!product.storeId || !product.storeId.userId || !product.storeId.userId.equals(userId)) {
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para actualizar este producto'
       });
     }
 
-    // Manejar nuevas imágenes si se subieron
-    if (req.files && req.files.length > 0) {
-      const newImages = req.files.map(file => `/uploads/${file.filename}`);
-      updateData.images = [...product.images, ...newImages];
-    }
+    // Preparar datos de actualización
+    const cleanUpdateData = {
+      name: updateData.name,
+      description: updateData.description,
+      price: updateData.price,
+      category: updateData.category,
+      stock: updateData.stock,
+      physicalLocation: updateData.physicalLocation,
+      averageShippingTime: updateData.averageShippingTime,
+      specifications: updateData.specifications,
+      isActive: updateData.isActive !== undefined ? updateData.isActive : product.isActive
+    };
 
-    // Actualizar especificaciones si se proporcionaron
-    if (updateData.specifications) {
-      updateData.specifications = new Map(Object.entries(updateData.specifications));
+    if (updateData.images && Array.isArray(updateData.images)) {
+      cleanUpdateData.images = updateData.images;
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(
       productId,
-      updateData,
+      cleanUpdateData,
       { new: true, runValidators: true }
-    ).populate('storeId', 'userId description rating');
+    );
 
     res.json({
       success: true,
       message: 'Producto actualizado exitosamente',
-      data: {
-        product: updatedProduct
-      }
+      data: updatedProduct
     });
 
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error interno del servidor'
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -350,9 +297,30 @@ const updateProduct = async (req, res) => {
 // Eliminar producto
 const deleteProduct = async (req, res) => {
   try {
+    // Verificar JWT
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token de autorización requerido'
+      });
+    }
+
+    let userId;
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token inválido'
+      });
+    }
+
     const productId = req.params.id;
 
-    // Verificar que el producto pertenece a la tienda del usuario
     const product = await Product.findById(productId).populate('storeId');
     
     if (!product) {
@@ -362,17 +330,16 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    if (!product.storeId.userId.equals(req.user._id)) {
+    if (!product.storeId.userId.equals(userId)) {
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para eliminar este producto'
       });
     }
 
-    // Marcar como inactivo en lugar de eliminar completamente
+    // Marcar como inactivo en lugar de eliminar
     await Product.findByIdAndUpdate(productId, { isActive: false });
 
-    // Actualizar contador de productos en la tienda
     await Store.findByIdAndUpdate(product.storeId._id, {
       $inc: { totalProducts: -1 }
     });
@@ -403,7 +370,6 @@ const getStoreProducts = async (req, res) => {
       featured
     } = req.query;
 
-    // Verificar que la tienda existe
     const store = await Store.findById(storeId);
     if (!store) {
       return res.status(404).json({
@@ -412,7 +378,6 @@ const getStoreProducts = async (req, res) => {
       });
     }
 
-    // Construir filtros
     const filter = { storeId, isActive: true };
     
     if (category) {
@@ -489,7 +454,7 @@ const getRelatedProducts = async (req, res) => {
       });
     }
 
-    // Buscar productos relacionados por categoría, excluyendo el producto actual
+    // Buscar productos relacionados por categoría
     const relatedProducts = await Product.find({
       _id: { $ne: id },
       category: product.category,
@@ -501,9 +466,7 @@ const getRelatedProducts = async (req, res) => {
 
     res.json({
       success: true,
-      data: {
-        relatedProducts
-      }
+      data: { relatedProducts }
     });
 
   } catch (error) {

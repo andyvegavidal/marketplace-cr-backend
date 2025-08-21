@@ -1,24 +1,3 @@
-/**
- * RUTAS DE REPORTES - ENDPOINTS DEL SISTEMA DE MODERACIÓN
- * 
- * Define todas las rutas relacionadas con el sistema de reportes,
- * incluyendo autenticación, autorización y validación de datos.
- * 
- * Endpoints implementados:
- * - POST /api/reports - Crear reporte
- * - GET /api/reports - Listar reportes (moderadores)
- * - GET /api/reports/stats - Estadísticas (administradores)
- * - GET /api/reports/:id - Obtener reporte específico
- * - PUT /api/reports/:id/assign - Asignar moderador
- * - POST /api/reports/:id/actions - Agregar acción
- * - PUT /api/reports/:id/resolve - Resolver reporte
- * - GET /api/reports/user/:userId - Reportes de usuario
- * - DELETE /api/reports/:id - Eliminar reporte
- * 
- * @routes ReportRoutes
- * @author Marketplace CR Development Team
- * @version 1.0.0
- */
 
 const express = require('express');
 const router = express.Router();

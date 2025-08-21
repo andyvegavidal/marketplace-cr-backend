@@ -8,11 +8,9 @@ const Product = require('../models/Product');
 const Store = require('../models/Store');
 const User = require('../models/User');
 
-console.log('🔧 CARGANDO analyticsRoutes.js');
 
 // Test endpoint
 router.get('/test', (req, res) => {
-  console.log('🔧 ENDPOINT DE PRUEBA /analytics/test FUNCIONANDO');
   res.json({ 
     success: true, 
     message: 'Analytics routes funcionando correctamente',
@@ -23,7 +21,6 @@ router.get('/test', (req, res) => {
 // Purchase History for Buyers - SOLO DATOS REALES
 router.get('/buyer/purchase-history', async (req, res) => {
   try {
-    console.log('🔧 ENDPOINT /analytics/buyer/purchase-history - DATOS REALES');
     
     const { 
       userId = '68a57c9ca4fac74da98768e6', // Usuario de prueba por defecto
@@ -214,8 +211,6 @@ router.get('/buyer/purchase-history', async (req, res) => {
     const totalItems = totalItemsResult[0]?.total || 0;
     const totalPages = Math.ceil(totalItems / parseInt(limit));
 
-    console.log('✅ Datos reales obtenidos de la base de datos');
-    console.log(`📊 Stats: ${stats.totalOrders} órdenes, ₡${stats.totalSpent.toLocaleString()}`);
     
     return res.json({
       success: true,
@@ -238,7 +233,6 @@ router.get('/buyer/purchase-history', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error en purchase-history:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -247,5 +241,4 @@ router.get('/buyer/purchase-history', async (req, res) => {
   }
 });
 
-console.log('🔧 EXPORTANDO ANALYTICS ROUTER');
 module.exports = router;

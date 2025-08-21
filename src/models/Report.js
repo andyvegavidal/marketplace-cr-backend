@@ -1,28 +1,7 @@
-/**
- * MODELO DE REPORTES - SISTEMA DE MODERACIÓN DEL MARKETPLACE
- * 
- * Esquema de base de datos para el sistema de reportes que permite a los usuarios
- * reportar productos, tiendas, comentarios o usuarios inapropiados.
- * 
- * Características implementadas:
- * - Sistema de categorización de reportes
- * - Estados de procesamiento (pendiente, en revisión, resuelto, rechazado)
- * - Evidencia multimedia (capturas de pantalla, etc.)
- * - Sistema de prioridades
- * - Auditoría temporal completa
- * - Referencias a diferentes tipos de contenido reportable
- * 
- * @model Report
- * @author Marketplace CR Development Team
- * @version 1.0.0
- */
 
 const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate-v2');
 
-/**
- * Esquema principal de reportes con validaciones empresariales.
- */
 const reportSchema = new mongoose.Schema({
   // Usuario que hace el reporte
   reporterId: {

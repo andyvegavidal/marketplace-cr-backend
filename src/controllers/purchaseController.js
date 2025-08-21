@@ -1,18 +1,8 @@
-/**
- * CONTROLADOR DE COMPRAS
- * 
- * Maneja todas las operaciones relacionadas con las compras realizadas por los usuarios.
- * 
- * @controller PurchaseController
- * @author Marketplace CR Development Team
- * @version 1.0.0
- */
-
 const jwt = require('jsonwebtoken');
 const Purchase = require('../models/Purchase');
 const User = require('../models/User');
 
-// Función helper para verificar token y obtener usuario
+// Verificar token y obtener usuario
 const verifyToken = async (req) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -32,10 +22,7 @@ const verifyToken = async (req) => {
   }
 };
 
-/**
- * Obtener todas las compras del usuario
- * GET /api/purchases/my-purchases
- */
+// Obtener todas las compras del usuario
 const getMyPurchases = async (req, res) => {
   try {
     const user = await verifyToken(req);
@@ -76,7 +63,6 @@ const getMyPurchases = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener compras:', error);
     
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
       return res.status(401).json({
@@ -93,10 +79,7 @@ const getMyPurchases = async (req, res) => {
   }
 };
 
-/**
- * Obtener detalles de una compra específica
- * GET /api/purchases/:id
- */
+// Obtener detalles de una compra específica
 const getPurchaseDetails = async (req, res) => {
   try {
     const user = await verifyToken(req);
@@ -124,7 +107,6 @@ const getPurchaseDetails = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener detalles de compra:', error);
     
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
       return res.status(401).json({
@@ -141,10 +123,7 @@ const getPurchaseDetails = async (req, res) => {
   }
 };
 
-/**
- * Obtener estadísticas de compras del usuario
- * GET /api/purchases/stats
- */
+// Obtener estadísticas de compras del usuario
 const getPurchaseStats = async (req, res) => {
   try {
     const user = await verifyToken(req);
@@ -203,7 +182,6 @@ const getPurchaseStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener estadísticas de compras:', error);
     
     if (error.message.includes('Token') || error.message.includes('Usuario')) {
       return res.status(401).json({

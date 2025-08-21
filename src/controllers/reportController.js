@@ -1,21 +1,3 @@
-/**
- * CONTROLADOR DE REPORTES - GESTIÓN DE MODERACIÓN
- * 
- * Maneja todas las operaciones relacionadas con el sistema de reportes,
- * incluyendo creación, gestión, moderación y estadísticas.
- * 
- * Funcionalidades implementadas:
- * - Creación de reportes por usuarios
- * - Gestión de reportes por moderadores
- * - Sistema de estadísticas y métricas
- * - Filtrado y búsqueda avanzada
- * - Acciones de moderación automatizadas
- * 
- * @controller ReportController
- * @author Marketplace CR Development Team
- * @version 1.0.0
- */
-
 const Report = require('../models/Report');
 const User = require('../models/User');
 const Product = require('../models/Product');
@@ -23,10 +5,7 @@ const Store = require('../models/Store');
 const Comment = require('../models/Comment');
 const Review = require('../models/Review');
 
-/**
- * Crear un nuevo reporte
- * POST /api/reports
- */
+// Crear un nuevo reporte
 const createReport = async (req, res) => {
   try {
     const {
@@ -79,37 +58,11 @@ const createReport = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario no se está reportando a sí mismo
-    // Comentado temporalmente para testing sin auth
-    // if (reportType === 'user' && reportedItemId === req.user.id) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: 'No puedes reportarte a ti mismo'
-    //   });
-    // }
+    // ID ficticio para testing (sin auth)
+    const reporterId = '507f1f77bcf86cd799439011';
 
-    // Verificar si ya existe un reporte similar reciente (últimas 24 horas)
-    // Comentado temporalmente para testing sin auth
-    // const existingReport = await Report.findOne({
-    //   reporterId: req.user.id,
-    //   reportType,
-    //   reportedItemId,
-    //   createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-    // });
-
-    // if (existingReport) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: 'Ya has reportado este elemento recientemente'
-    //   });
-    // }
-
-    // Crear el reporte (usando un ID ficticio para testing)
-    const reporterId = '507f1f77bcf86cd799439011'; // ID ficticio para testing
-
-    // Crear el reporte
     const report = new Report({
-      reporterId: reporterId, // Usando ID ficticio
+      reporterId: reporterId,
       reportType,
       reportedItemId,
       reportTypeModel,
@@ -127,7 +80,6 @@ const createReport = async (req, res) => {
 
     await report.save();
 
-    // Poblar los datos para la respuesta
     await report.populate([
       { path: 'reporterId', select: 'name email' },
       { path: 'reportedItemId' }
@@ -140,7 +92,6 @@ const createReport = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al crear reporte:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -149,10 +100,7 @@ const createReport = async (req, res) => {
   }
 };
 
-/**
- * Obtener todos los reportes con filtros
- * GET /api/reports
- */
+// Obtener todos los reportes con filtros
 const getReports = async (req, res) => {
   try {
     const {
@@ -167,7 +115,6 @@ const getReports = async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    // Construir filtros
     const filters = {};
     
     if (status) filters.status = status;
@@ -176,7 +123,6 @@ const getReports = async (req, res) => {
     if (priority) filters.priority = priority;
     if (assignedModerator) filters.assignedModerator = assignedModerator;
 
-    // Opciones de paginación
     const options = {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -196,7 +142,6 @@ const getReports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener reportes:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -205,10 +150,7 @@ const getReports = async (req, res) => {
   }
 };
 
-/**
- * Obtener un reporte específico
- * GET /api/reports/:id
- */
+// Obtener un reporte específico
 const getReportById = async (req, res) => {
   try {
     const report = await Report.findById(req.params.id)
@@ -231,7 +173,6 @@ const getReportById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener reporte:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -240,15 +181,11 @@ const getReportById = async (req, res) => {
   }
 };
 
-/**
- * Asignar moderador a un reporte
- * PUT /api/reports/:id/assign
- */
+// Asignar moderador a un reporte
 const assignModerator = async (req, res) => {
   try {
     const { moderatorId } = req.body;
     
-    // Verificar que el moderador existe y tiene permisos
     const moderator = await User.findById(moderatorId);
     if (!moderator || moderator.role !== 'admin') {
       return res.status(400).json({
@@ -273,7 +210,6 @@ const assignModerator = async (req, res) => {
       });
     }
 
-    // Agregar acción de moderador
     await report.addModeratorAction('reviewed', 'Reporte asignado para revisión', moderatorId);
 
     res.json({
@@ -283,7 +219,6 @@ const assignModerator = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al asignar moderador:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -292,10 +227,7 @@ const assignModerator = async (req, res) => {
   }
 };
 
-/**
- * Agregar acción de moderador
- * POST /api/reports/:id/actions
- */
+// Agregar acción de moderador
 const addModeratorAction = async (req, res) => {
   try {
     const { action, description } = req.body;
@@ -310,7 +242,6 @@ const addModeratorAction = async (req, res) => {
 
     await report.addModeratorAction(action, description, req.user.id);
 
-    // Poblar datos actualizados
     await report.populate([
       { path: 'moderatorActions.moderatorId', select: 'name email' },
       { path: 'resolution.resolvedBy', select: 'name email' }
@@ -323,7 +254,6 @@ const addModeratorAction = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al agregar acción:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -332,10 +262,7 @@ const addModeratorAction = async (req, res) => {
   }
 };
 
-/**
- * Resolver un reporte
- * PUT /api/reports/:id/resolve
- */
+// Resolver un reporte
 const resolveReport = async (req, res) => {
   try {
     const { outcome, description } = req.body;
@@ -348,7 +275,6 @@ const resolveReport = async (req, res) => {
       });
     }
 
-    // Actualizar resolución
     report.resolution = {
       outcome,
       description,
@@ -365,7 +291,6 @@ const resolveReport = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al resolver reporte:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -374,18 +299,13 @@ const resolveReport = async (req, res) => {
   }
 };
 
-/**
- * Obtener estadísticas de reportes
- * GET /api/reports/stats
- */
+// Obtener estadísticas de reportes
 const getReportStats = async (req, res) => {
   try {
     const { timeframe = '30d' } = req.query;
     
-    // Estadísticas generales
     const stats = await Report.getReportStats(timeframe);
     
-    // Conteos por estado
     const statusCounts = await Report.aggregate([
       {
         $group: {
@@ -395,7 +315,6 @@ const getReportStats = async (req, res) => {
       }
     ]);
 
-    // Conteos por categoría
     const categoryCounts = await Report.aggregate([
       {
         $group: {
@@ -406,7 +325,6 @@ const getReportStats = async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
-    // Conteos por tipo
     const typeCounts = await Report.aggregate([
       {
         $group: {
@@ -416,13 +334,11 @@ const getReportStats = async (req, res) => {
       }
     ]);
 
-    // Reportes vencidos
     const overdueReports = await Report.countDocuments({
       status: 'pending',
       createdAt: { $lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
     });
 
-    // Tiempo promedio de resolución
     const avgResolutionTime = await Report.aggregate([
       {
         $match: {
@@ -460,7 +376,6 @@ const getReportStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener estadísticas:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -469,10 +384,7 @@ const getReportStats = async (req, res) => {
   }
 };
 
-/**
- * Obtener reportes de un usuario específico
- * GET /api/reports/user/:userId
- */
+// Obtener reportes de un usuario específico
 const getUserReports = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -498,7 +410,6 @@ const getUserReports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener reportes del usuario:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',
@@ -507,10 +418,7 @@ const getUserReports = async (req, res) => {
   }
 };
 
-/**
- * Eliminar un reporte (solo para administradores)
- * DELETE /api/reports/:id
- */
+// Eliminar un reporte (solo para administradores)
 const deleteReport = async (req, res) => {
   try {
     const report = await Report.findByIdAndDelete(req.params.id);
@@ -528,7 +436,6 @@ const deleteReport = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al eliminar reporte:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',

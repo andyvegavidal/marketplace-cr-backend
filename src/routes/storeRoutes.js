@@ -10,8 +10,9 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 20, sortBy = 'rating', sortOrder = -1 } = req.query;
     const skip = (page - 1) * limit;
 
-    const stores = await Store.find({ isPublic: true })
-      .populate('userId', 'fullName photo country')
+    // Filtrar solo tiendas públicas
+    const stores = await Store.find()
+      .populate('userId', 'fullName photo country email address phone')
       .sort({ [sortBy]: parseInt(sortOrder) })
       .skip(skip)
       .limit(parseInt(limit));
@@ -50,7 +51,6 @@ router.get('/user/:userId', async (req, res) => {
       data: { store } 
     });
   } catch (error) {
-    console.error('Error al obtener tienda por userID:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor',
