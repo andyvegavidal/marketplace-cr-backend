@@ -4,7 +4,12 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "seed": "node seedDatabase.js",
+    "seed:fresh": "node seedDatabase.js",
+    "start:full": "npm run build && npm start",
+    "dev:full": "npm run build && npm run dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
